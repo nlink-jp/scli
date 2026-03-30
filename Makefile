@@ -1,6 +1,6 @@
 BINARY_NAME := scli
 VERSION     := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-LDFLAGS     := -ldflags "-X github.com/magifd2/scli/cmd.version=$(VERSION)"
+LDFLAGS     := -ldflags "-X github.com/nlink-jp/scli/cmd.version=$(VERSION)"
 
 PLATFORMS := \
 	linux/amd64 \
