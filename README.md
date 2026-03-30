@@ -54,6 +54,7 @@ scli auth login
 | `scli user list` | List workspace members |
 | `scli workspace list` | List configured workspaces |
 | `scli workspace use <name>` | Switch default workspace |
+| `scli workspace rename <old> <new>` | Rename a workspace (config + keychain + cache) |
 
 ### Common flags
 
@@ -114,6 +115,19 @@ scli auth login --workspace work
 scli workspace use work
 scli channel read #general --workspace personal
 ```
+
+### Renaming a workspace
+
+```sh
+scli workspace rename personal my-personal
+```
+
+> **Warning:** Do not rename workspaces by editing `config.json` directly.
+> The authentication token is stored in the OS keychain under the workspace
+> name. If you change the name in the config file without updating the
+> keychain, scli will be unable to find the token and authentication will
+> break. Always use `scli workspace rename` to keep config, keychain, and
+> cache in sync.
 
 ## License
 
