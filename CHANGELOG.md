@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.4.0] - 2026-03-30
+
+### Added
+
+- **`scli workspace rename <old> <new>`** — Rename a workspace, atomically updating config.json, OS keychain token, cache directory, and default workspace pointer. Prevents keychain data orphaning from manual config edits.
+- **Japanese README** (`README.ja.md`) — Full Japanese translation of README.md.
+
+
 ## [1.3.2] - 2026-03-30
 
 ### Fixed

@@ -165,6 +165,7 @@ scli channel list
 | `missing_scope` | Slack アプリにスコープが未追加 | API ポータルでスコープを追加してアプリを再インストール |
 | ブラウザが開かない | ヘッドレス環境 | 標準出力に表示されるURLを手動でコピーしてブラウザで開く |
 | キーチェーンの確認が繰り返し表示される | OSキーチェーンがロックされている | キーチェーンをアンロック（macOS: キーチェーンアクセスアプリ） |
+| リネーム後に `no token found for workspace` | config.json を直接編集してワークスペース名を変更した | `scli auth login --workspace <新名>` で再認証、または `scli workspace rename` で安全にリネーム |
 
 ---
 

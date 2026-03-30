@@ -170,6 +170,7 @@ scli channel list
 | `missing_scope` | Scope not added to the Slack app | Add the scope in the API portal and reinstall the app |
 | Browser does not open | Headless environment | Copy the URL printed to stdout and open it manually |
 | Keychain prompt appears repeatedly | OS keychain locked | Unlock your keychain (macOS: Keychain Access app) |
+| `no token found for workspace` after renaming | Workspace renamed via config.json edit | Run `scli auth login --workspace <new-name>` to re-authenticate, or use `scli workspace rename` for safe renaming |
 
 ---
 
