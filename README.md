@@ -109,6 +109,16 @@ md-to-slack input.md | scli post '#general' 'Hello' --blocks-file -
 md-to-slack input.md | scli post '#general' --blocks-file -
 ```
 
+#### Capturing the message timestamp
+
+`post` and `dm send` output `{"ts":"...","channel":"..."}` with `--json`:
+
+```sh
+# Capture ts for thread reply or file attachment
+TS=$(scli post '#ops' 'alert' --json | jq -r .ts)
+scli post '#ops' 'details here' --thread "$TS"
+```
+
 ### search options
 
 ```

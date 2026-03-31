@@ -84,7 +84,6 @@ func runPost(cmd *cobra.Command, args []string) error {
 	}
 
 	p := newPrinter(cmd)
-	p.Success(fmt.Sprintf("Message posted (ts: %s)", ts))
-	return nil
+	return p.PostResult(ts, channelID)
 }
 

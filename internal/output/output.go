@@ -284,11 +284,22 @@ func (p *Printer) UserProfile(profile slack.UserProfile) error {
 	return nil
 }
 
-// Success prints a success message.
+// Success prints a success message. Suppressed in JSON mode.
 func (p *Printer) Success(msg string) {
 	if !p.jsonOut {
 		fmt.Fprintln(p.w, msg)
 	}
+}
+
+// PostResult outputs the result of a post/dm send operation.
+// In JSON mode, outputs {"ts":"...", "channel":"..."} to stdout.
+// In text mode, prints a human-readable success message.
+func (p *Printer) PostResult(ts, channel string) error {
+	if p.jsonOut {
+		return p.writeJSON(map[string]string{"ts": ts, "channel": channel})
+	}
+	fmt.Fprintf(p.w, "Message posted (ts: %s)\n", ts)
+	return nil
 }
 
 // writeJSON encodes v as indented JSON to p.w.

@@ -108,6 +108,16 @@ scli post '#general' 'Hello' --blocks-file blocks.json
 md-to-slack input.md | scli post '#general' 'Hello' --blocks-file -
 ```
 
+#### メッセージ ts の取得
+
+`post` と `dm send` は `--json` 指定で `{"ts":"...","channel":"..."}` を出力:
+
+```sh
+# ts を取得してスレッド返信やファイル添付に使用
+TS=$(scli post '#ops' 'alert' --json | jq -r .ts)
+scli post '#ops' 'details' --thread "$TS"
+```
+
 ### search オプション
 
 ```

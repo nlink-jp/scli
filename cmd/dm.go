@@ -183,8 +183,7 @@ func runDMSend(cmd *cobra.Command, args []string) error {
 	}
 
 	p := newPrinter(cmd)
-	p.Success(fmt.Sprintf("Message sent (ts: %s)", ts))
-	return nil
+	return p.PostResult(ts, channelID)
 }
 
 
