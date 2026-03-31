@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
@@ -105,6 +106,90 @@ func TestPostThreadReplyWithBlocks(t *testing.T) {
 	}
 	if gotBlocks != blocks {
 		t.Errorf("blocks: got %q, want %q", gotBlocks, blocks)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// UploadFile thread support
+// ---------------------------------------------------------------------------
+
+func TestUploadFile_ThreadTS(t *testing.T) {
+	var gotThreadTS string
+	var uploadURL string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/files.getUploadURLExternal":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true, "upload_url": uploadURL + "/upload", "file_id": "F001",
+			})
+		case "/upload":
+			w.WriteHeader(http.StatusOK)
+		case "/files.completeUploadExternal":
+			_ = r.ParseForm()
+			gotThreadTS = r.FormValue("thread_ts")
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	uploadURL = srv.URL
+
+	// Create a temp file to upload
+	tmp := filepath.Join(t.TempDir(), "test.txt")
+	if err := os.WriteFile(tmp, []byte("hello"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	c := newTestClient(t, srv)
+	err := c.UploadFile(t.Context(), "C001", tmp, "comment", "1234567890.123456")
+	if err != nil {
+		t.Fatalf("UploadFile: %v", err)
+	}
+	if gotThreadTS != "1234567890.123456" {
+		t.Errorf("thread_ts: got %q, want %q", gotThreadTS, "1234567890.123456")
+	}
+}
+
+func TestUploadFile_NoThread(t *testing.T) {
+	var gotThreadTS string
+	var uploadURL2 string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/files.getUploadURLExternal":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true, "upload_url": uploadURL2 + "/upload", "file_id": "F001",
+			})
+		case "/upload":
+			w.WriteHeader(http.StatusOK)
+		case "/files.completeUploadExternal":
+			_ = r.ParseForm()
+			gotThreadTS = r.FormValue("thread_ts")
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	uploadURL2 = srv.URL
+
+	tmp := filepath.Join(t.TempDir(), "test.txt")
+	if err := os.WriteFile(tmp, []byte("hello"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	c := newTestClient(t, srv)
+	err := c.UploadFile(t.Context(), "C001", tmp, "", "")
+	if err != nil {
+		t.Fatalf("UploadFile: %v", err)
+	}
+	if gotThreadTS != "" {
+		t.Errorf("thread_ts should be empty when not specified, got %q", gotThreadTS)
 	}
 }
 

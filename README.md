@@ -75,7 +75,7 @@ scli auth login
 ### post options
 
 ```
---file <path>         Attach a file to the message
+--file <path>         Attach a file (message optional; combinable with --thread)
 --thread <ts>         Reply in a thread
 --blocks <json>       Block Kit JSON array (inline string)
 --blocks-file <path>  Block Kit JSON from a file ("-" reads from stdin)

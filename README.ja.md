@@ -77,7 +77,7 @@ scli auth login
 ### post オプション
 
 ```
---file <path>         ファイルを添付
+--file <path>         ファイルを添付（メッセージ省略可、--thread と併用可）
 --thread <ts>         スレッドに返信
 --blocks <json>       Block Kit JSON 配列（インライン文字列）
 --blocks-file <path>  Block Kit JSON をファイルから読み込み（"-" で stdin）
