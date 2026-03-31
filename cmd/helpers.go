@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -64,4 +67,66 @@ func unescapeText(s string) string {
 // newPrinter returns an output.Printer configured from the global flags.
 func newPrinter(cmd *cobra.Command) *output.Printer {
 	return output.New(cmd.OutOrStdout(), jsonOutput, noColor)
+}
+
+// loadBlocksJSON reads Block Kit JSON from the given flag/file pair and returns
+// a valid JSON array string suitable for the Slack API `blocks` parameter.
+//
+// Accepts both formats:
+//   - JSON array: [{"type":"section",...}]
+//   - Wrapped object: {"blocks":[{"type":"section",...}]}  (e.g. md-to-slack output)
+//
+// The wrapped format is automatically unwrapped to extract the array.
+func loadBlocksJSON(inline, filePath string) (string, error) {
+	if inline != "" && filePath != "" {
+		return "", fmt.Errorf("--blocks and --blocks-file are mutually exclusive")
+	}
+
+	var raw string
+
+	switch {
+	case inline != "":
+		raw = inline
+	case filePath != "":
+		var data []byte
+		var err error
+		if filePath == "-" {
+			data, err = io.ReadAll(os.Stdin)
+		} else {
+			data, err = os.ReadFile(filePath) //nolint:gosec
+		}
+		if err != nil {
+			return "", fmt.Errorf("read blocks file: %w", err)
+		}
+		raw = strings.TrimSpace(string(data))
+	default:
+		return "", nil
+	}
+
+	if !json.Valid([]byte(raw)) {
+		return "", fmt.Errorf("blocks JSON is invalid")
+	}
+
+	// If the input is a {"blocks": [...]} wrapper (e.g. md-to-slack output),
+	// extract the blocks array.
+	raw = unwrapBlocksObject(raw)
+
+	return raw, nil
+}
+
+// unwrapBlocksObject checks if the JSON is an object with a "blocks" key and
+// extracts the array. Returns the input unchanged if it is already an array.
+func unwrapBlocksObject(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if len(trimmed) == 0 || trimmed[0] == '[' {
+		return raw
+	}
+
+	var wrapper struct {
+		Blocks json.RawMessage `json:"blocks"`
+	}
+	if err := json.Unmarshal([]byte(trimmed), &wrapper); err == nil && wrapper.Blocks != nil {
+		return string(wrapper.Blocks)
+	}
+	return raw
 }

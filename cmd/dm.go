@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 
 	"github.com/nlink-jp/scli/internal/slack"
@@ -153,7 +150,7 @@ func runDMSend(cmd *cobra.Command, args []string) error {
 	nameOrID := args[0]
 
 	// Resolve blocks JSON.
-	blocksJSON, err := resolveDMBlocksJSON()
+	blocksJSON, err := loadBlocksJSON(dmSendBlocks, dmSendBlockFl)
 	if err != nil {
 		return err
 	}
@@ -190,38 +187,6 @@ func runDMSend(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveDMBlocksJSON returns the Block Kit JSON string from dm send flags.
-func resolveDMBlocksJSON() (string, error) {
-	if dmSendBlocks != "" && dmSendBlockFl != "" {
-		return "", fmt.Errorf("--blocks and --blocks-file are mutually exclusive")
-	}
-
-	var raw string
-
-	switch {
-	case dmSendBlocks != "":
-		raw = dmSendBlocks
-	case dmSendBlockFl != "":
-		var data []byte
-		var err error
-		if dmSendBlockFl == "-" {
-			data, err = io.ReadAll(os.Stdin)
-		} else {
-			data, err = os.ReadFile(dmSendBlockFl) //nolint:gosec
-		}
-		if err != nil {
-			return "", fmt.Errorf("read blocks file: %w", err)
-		}
-		raw = string(data)
-	default:
-		return "", nil
-	}
-
-	if !json.Valid([]byte(raw)) {
-		return "", fmt.Errorf("blocks JSON is invalid")
-	}
-	return raw, nil
-}
 
 // resolveDMChannelID resolves a user name, user ID, or DM channel ID to a
 // DM channel ID (D-prefixed).

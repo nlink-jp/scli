@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -35,7 +32,7 @@ func runPost(cmd *cobra.Command, args []string) error {
 	nameOrID := args[0]
 
 	// Resolve blocks JSON from flag or file.
-	blocksJSON, err := resolveBlocksJSON()
+	blocksJSON, err := loadBlocksJSON(postBlocks, postBlockFile)
 	if err != nil {
 		return err
 	}
@@ -91,37 +88,3 @@ func runPost(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveBlocksJSON returns the Block Kit JSON string from the --blocks flag,
-// the --blocks-file flag (supports "-" for stdin), or empty string if neither is set.
-// Returns an error if both flags are set simultaneously or if the JSON is invalid.
-func resolveBlocksJSON() (string, error) {
-	if postBlocks != "" && postBlockFile != "" {
-		return "", fmt.Errorf("--blocks and --blocks-file are mutually exclusive")
-	}
-
-	var raw string
-
-	switch {
-	case postBlocks != "":
-		raw = postBlocks
-	case postBlockFile != "":
-		var data []byte
-		var err error
-		if postBlockFile == "-" {
-			data, err = io.ReadAll(os.Stdin)
-		} else {
-			data, err = os.ReadFile(postBlockFile) //nolint:gosec
-		}
-		if err != nil {
-			return "", fmt.Errorf("read blocks file: %w", err)
-		}
-		raw = string(data)
-	default:
-		return "", nil
-	}
-
-	if !json.Valid([]byte(raw)) {
-		return "", fmt.Errorf("blocks JSON is invalid")
-	}
-	return raw, nil
-}

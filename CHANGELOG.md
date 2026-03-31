@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.5.1] - 2026-03-31
+
+### Fixed
+- Accept `{"blocks": [...]}` wrapper format (e.g. md-to-slack output) in addition to bare JSON arrays
+- Auto-unwrap to extract the blocks array before sending to Slack API
+
+### Changed
+- Refactor blocks JSON resolution into shared `loadBlocksJSON()` helper (used by both `post` and `dm send`)
+
 ## [1.5.0] - 2026-03-31
 
 ### Added
