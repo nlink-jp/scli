@@ -94,6 +94,35 @@ func TestMessages_FallbackToUserID(t *testing.T) {
 	}
 }
 
+func TestPostResult_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	p := output.New(&buf, true, false) // jsonOut=true
+	err := p.PostResult("1234567890.123456", "C001")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var result map[string]string
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if result["ts"] != "1234567890.123456" {
+		t.Errorf("ts: got %q, want %q", result["ts"], "1234567890.123456")
+	}
+	if result["channel"] != "C001" {
+		t.Errorf("channel: got %q, want %q", result["channel"], "C001")
+	}
+}
+
+func TestPostResult_Text(t *testing.T) {
+	var buf bytes.Buffer
+	p := output.New(&buf, false, false) // jsonOut=false
+	_ = p.PostResult("1234567890.123456", "C001")
+	got := buf.String()
+	if !strings.Contains(got, "1234567890.123456") {
+		t.Errorf("expected ts in output, got: %q", got)
+	}
+}
+
 func TestFormatTimestamp(t *testing.T) {
 	buf := new(bytes.Buffer)
 	p := newTestPrinter(buf)

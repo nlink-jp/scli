@@ -104,3 +104,24 @@ func TestLoadBlocksJSON_ArrayPassedThrough(t *testing.T) {
 		t.Errorf("got %q, want %q", got, array)
 	}
 }
+
+func TestLoadBlocksJSON_UnwrapNull(t *testing.T) {
+	// {"blocks": null} should be treated as no blocks (return the raw input)
+	got, err := loadBlocksJSON(`{"blocks": null}`, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != `{"blocks": null}` {
+		t.Errorf("got %q, want original input", got)
+	}
+}
+
+func TestLoadBlocksJSON_EmptyArray(t *testing.T) {
+	got, err := loadBlocksJSON(`[]`, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != `[]` {
+		t.Errorf("got %q, want %q", got, `[]`)
+	}
+}

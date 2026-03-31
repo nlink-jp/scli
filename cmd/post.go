@@ -37,6 +37,10 @@ func runPost(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if postFile != "" && blocksJSON != "" {
+		return fmt.Errorf("--file and --blocks / --blocks-file are mutually exclusive")
+	}
+
 	// <message> is required unless --blocks/--blocks-file or --file is provided.
 	text := ""
 	if len(args) >= 2 {

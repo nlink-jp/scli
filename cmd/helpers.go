@@ -125,7 +125,7 @@ func unwrapBlocksObject(raw string) string {
 	var wrapper struct {
 		Blocks json.RawMessage `json:"blocks"`
 	}
-	if err := json.Unmarshal([]byte(trimmed), &wrapper); err == nil && wrapper.Blocks != nil {
+	if err := json.Unmarshal([]byte(trimmed), &wrapper); err == nil && wrapper.Blocks != nil && string(wrapper.Blocks) != "null" {
 		return string(wrapper.Blocks)
 	}
 	return raw

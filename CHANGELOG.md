@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.5.4] - 2026-03-31
+
+### Fixed
+- `post --file --blocks` now returns error (mutually exclusive)
+- `unwrapBlocksObject` correctly handles `{"blocks": null}` (returns input unchanged)
+- PostResult JSON parse edge case with null blocks
+
+### Added
+- Tests for PostResult (JSON and text output)
+- Tests for unwrapBlocksObject edge cases (null, empty array)
+
 ## [1.5.3] - 2026-03-31
 
 ### Added
