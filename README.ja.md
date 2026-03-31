@@ -49,7 +49,7 @@ scli auth login
 | `scli channel read <channel>` | チャンネルのメッセージを読む |
 | `scli dm list` | DM 会話の一覧 |
 | `scli dm read <user>` | DM メッセージを読む |
-| `scli dm send <user> <message>` | DM を送信 |
+| `scli dm send <user> [message]` | DM を送信（Block Kit 対応） |
 | `scli post <channel> [message]` | チャンネルにメッセージを投稿 |
 | `scli search <query>` | ワークスペース内のメッセージを検索 |
 | `scli unread` | 未読のチャンネル・DM を表示 |
@@ -85,6 +85,15 @@ scli auth login
 
 `--blocks` / `--blocks-file` 使用時、`[message]` は通知フォールバックテキストになり省略可能。
 両フラグは排他的。
+
+### dm send オプション
+
+```
+--blocks <json>       Block Kit JSON 配列（インライン文字列）
+--blocks-file <path>  Block Kit JSON をファイルから読み込み（"-" で stdin）
+```
+
+`post` と同じ動作 — blocks 指定時はメッセージ省略可能。
 
 #### Block Kit の例
 

@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/nlink-jp/scli/internal/slack"
@@ -15,9 +18,11 @@ var dmCmd = &cobra.Command{
 }
 
 var (
-	dmReadLimit  int
-	dmReadUnread bool
-	dmReadThread string
+	dmReadLimit   int
+	dmReadUnread  bool
+	dmReadThread  string
+	dmSendBlocks  string
+	dmSendBlockFl string
 )
 
 var dmListCmd = &cobra.Command{
@@ -34,9 +39,9 @@ var dmReadCmd = &cobra.Command{
 }
 
 var dmSendCmd = &cobra.Command{
-	Use:   "send <user> <message>",
+	Use:   "send <user> [message]",
 	Short: "Send a direct message to a user",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.RangeArgs(1, 2),
 	RunE:  runDMSend,
 }
 
@@ -44,6 +49,9 @@ func init() {
 	dmReadCmd.Flags().IntVarP(&dmReadLimit, "limit", "n", 20, "Number of messages to fetch")
 	dmReadCmd.Flags().BoolVar(&dmReadUnread, "unread", false, "Show only unread messages")
 	dmReadCmd.Flags().StringVar(&dmReadThread, "thread", "", "Show a specific thread (message timestamp)")
+
+	dmSendCmd.Flags().StringVar(&dmSendBlocks, "blocks", "", "Block Kit JSON to post (JSON array string)")
+	dmSendCmd.Flags().StringVar(&dmSendBlockFl, "blocks-file", "", `Path to a file containing Block Kit JSON ("-" reads from stdin)`)
 
 	dmCmd.AddCommand(dmListCmd, dmReadCmd, dmSendCmd)
 	rootCmd.AddCommand(dmCmd)
@@ -143,7 +151,19 @@ func runDMRead(cmd *cobra.Command, args []string) error {
 
 func runDMSend(cmd *cobra.Command, args []string) error {
 	nameOrID := args[0]
-	text := unescapeText(args[1])
+
+	// Resolve blocks JSON.
+	blocksJSON, err := resolveDMBlocksJSON()
+	if err != nil {
+		return err
+	}
+
+	text := ""
+	if len(args) >= 2 {
+		text = unescapeText(args[1])
+	} else if blocksJSON == "" {
+		return fmt.Errorf("message argument is required when --blocks / --blocks-file is not provided")
+	}
 
 	client, err := newSlackClient()
 	if err != nil {
@@ -155,7 +175,12 @@ func runDMSend(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ts, err := client.PostMessage(cmd.Context(), channelID, text)
+	var ts string
+	if blocksJSON != "" {
+		ts, err = client.PostMessageWithBlocks(cmd.Context(), channelID, text, blocksJSON)
+	} else {
+		ts, err = client.PostMessage(cmd.Context(), channelID, text)
+	}
 	if err != nil {
 		return fmt.Errorf("send DM: %w", err)
 	}
@@ -163,6 +188,39 @@ func runDMSend(cmd *cobra.Command, args []string) error {
 	p := newPrinter(cmd)
 	p.Success(fmt.Sprintf("Message sent (ts: %s)", ts))
 	return nil
+}
+
+// resolveDMBlocksJSON returns the Block Kit JSON string from dm send flags.
+func resolveDMBlocksJSON() (string, error) {
+	if dmSendBlocks != "" && dmSendBlockFl != "" {
+		return "", fmt.Errorf("--blocks and --blocks-file are mutually exclusive")
+	}
+
+	var raw string
+
+	switch {
+	case dmSendBlocks != "":
+		raw = dmSendBlocks
+	case dmSendBlockFl != "":
+		var data []byte
+		var err error
+		if dmSendBlockFl == "-" {
+			data, err = io.ReadAll(os.Stdin)
+		} else {
+			data, err = os.ReadFile(dmSendBlockFl) //nolint:gosec
+		}
+		if err != nil {
+			return "", fmt.Errorf("read blocks file: %w", err)
+		}
+		raw = string(data)
+	default:
+		return "", nil
+	}
+
+	if !json.Valid([]byte(raw)) {
+		return "", fmt.Errorf("blocks JSON is invalid")
+	}
+	return raw, nil
 }
 
 // resolveDMChannelID resolves a user name, user ID, or DM channel ID to a

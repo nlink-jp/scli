@@ -47,7 +47,7 @@ scli auth login
 | `scli channel read <channel>` | Read messages from a channel |
 | `scli dm list` | List open DM conversations |
 | `scli dm read <user>` | Read DM messages |
-| `scli dm send <user> <message>` | Send a direct message |
+| `scli dm send <user> [message]` | Send a direct message (supports Block Kit) |
 | `scli post <channel> [message]` | Post a message to a channel |
 | `scli search <query>` | Search messages in the workspace |
 | `scli unread` | Show channels and DMs with unread messages |
@@ -83,6 +83,15 @@ scli auth login
 
 When `--blocks` or `--blocks-file` is used, `[message]` becomes the notification fallback text
 and may be omitted. The two flags are mutually exclusive.
+
+### dm send options
+
+```
+--blocks <json>       Block Kit JSON array (inline string)
+--blocks-file <path>  Block Kit JSON from a file ("-" reads from stdin)
+```
+
+Same behavior as `post` — message is optional when blocks are provided.
 
 #### Block Kit examples
 
