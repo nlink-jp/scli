@@ -37,12 +37,12 @@ func runPost(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// <message> is required when not posting blocks; optional with blocks.
+	// <message> is required unless --blocks/--blocks-file or --file is provided.
 	text := ""
 	if len(args) >= 2 {
 		text = unescapeText(args[1])
-	} else if blocksJSON == "" {
-		return fmt.Errorf("message argument is required when --blocks / --blocks-file is not provided")
+	} else if blocksJSON == "" && postFile == "" {
+		return fmt.Errorf("message argument is required when --blocks / --blocks-file / --file is not provided")
 	}
 
 	client, err := newSlackClient()
@@ -57,7 +57,7 @@ func runPost(cmd *cobra.Command, args []string) error {
 
 	if postFile != "" {
 		// File upload: message becomes the initial comment.
-		if err := client.UploadFile(cmd.Context(), channelID, postFile, text); err != nil {
+		if err := client.UploadFile(cmd.Context(), channelID, postFile, text, postThread); err != nil {
 			return fmt.Errorf("upload file: %w", err)
 		}
 		p := newPrinter(cmd)

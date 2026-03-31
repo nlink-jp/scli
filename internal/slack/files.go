@@ -16,7 +16,7 @@ import (
 // message as the initial comment.
 // Uses the current Slack file upload API (files.getUploadURLExternal +
 // files.completeUploadExternal).
-func (c *Client) UploadFile(ctx context.Context, channelID, filePath, message string) error {
+func (c *Client) UploadFile(ctx context.Context, channelID, filePath, message, threadTS string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("open file: %w", err)
@@ -42,7 +42,7 @@ func (c *Client) UploadFile(ctx context.Context, channelID, filePath, message st
 	}
 
 	// Step 3: complete upload and share to channel.
-	return c.completeUpload(ctx, channelID, fileID, filename, message)
+	return c.completeUpload(ctx, channelID, fileID, filename, message, threadTS)
 }
 
 func (c *Client) getUploadURL(ctx context.Context, filename string, length int) (uploadURL, fileID string, err error) {
@@ -82,7 +82,7 @@ func (c *Client) uploadToURL(ctx context.Context, uploadURL string, data []byte)
 	return nil
 }
 
-func (c *Client) completeUpload(ctx context.Context, channelID, fileID, filename, message string) error {
+func (c *Client) completeUpload(ctx context.Context, channelID, fileID, filename, message, threadTS string) error {
 	filesJSON, err := json.Marshal([]map[string]string{{"id": fileID, "title": filename}})
 	if err != nil {
 		return fmt.Errorf("marshal files: %w", err)
@@ -94,6 +94,9 @@ func (c *Client) completeUpload(ctx context.Context, channelID, fileID, filename
 	}
 	if message != "" {
 		params.Set("initial_comment", message)
+	}
+	if threadTS != "" {
+		params.Set("thread_ts", threadTS)
 	}
 
 	var resp struct{}
