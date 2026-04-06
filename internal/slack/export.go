@@ -2,6 +2,7 @@ package slack
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,6 +30,22 @@ type rawMsg struct {
 		Mimetype           string `json:"mimetype"`
 		URLPrivateDownload string `json:"url_private_download"`
 	} `json:"files"`
+	Attachments []struct {
+		Fallback  string `json:"fallback"`
+		Color     string `json:"color"`
+		Pretext   string `json:"pretext"`
+		Title     string `json:"title"`
+		TitleLink string `json:"title_link"`
+		Text      string `json:"text"`
+		Fields    []struct {
+			Title string `json:"title"`
+			Value string `json:"value"`
+			Short bool   `json:"short"`
+		} `json:"fields"`
+		Footer   string `json:"footer"`
+		ImageURL string `json:"image_url"`
+	} `json:"attachments"`
+	Blocks json.RawMessage `json:"blocks"`
 }
 
 // ExportChannel fetches the full message history of channelID (including all
@@ -55,7 +72,7 @@ func (c *Client) ExportChannel(ctx context.Context, channelID, channelName, olde
 	messages := make([]ExportMessage, 0, len(raw))
 
 	for _, m := range raw {
-		em, err := c.rawToExportMessage(ctx, m, "", false, saveDir)
+		em, err := c.rawToExportMessage(ctx, m, saveDir)
 		if err != nil {
 			return ChannelExport{}, err
 		}
@@ -67,7 +84,7 @@ func (c *Client) ExportChannel(ctx context.Context, channelID, channelName, olde
 				return ChannelExport{}, err
 			}
 			for _, r := range replies {
-				rem, err := c.rawToExportMessage(ctx, r, m.TS, true, saveDir)
+				rem, err := c.rawToExportMessage(ctx, r, saveDir)
 				if err != nil {
 					return ChannelExport{}, err
 				}
@@ -180,7 +197,9 @@ func (c *Client) fetchAllReplies(ctx context.Context, channelID, threadTS string
 
 // rawToExportMessage converts a rawMsg to an ExportMessage, resolving user
 // names and optionally downloading attached files.
-func (c *Client) rawToExportMessage(ctx context.Context, m rawMsg, threadTS string, isReply bool, saveDir string) (ExportMessage, error) {
+// thread_timestamp_unix and is_reply are derived from the raw message's
+// thread_ts field, matching stail's behaviour.
+func (c *Client) rawToExportMessage(ctx context.Context, m rawMsg, saveDir string) (ExportMessage, error) {
 	postType := "user"
 	if m.BotID != "" {
 		postType = "bot"
@@ -199,30 +218,51 @@ func (c *Client) rawToExportMessage(ctx context.Context, m rawMsg, threadTS stri
 		userName = c.ResolveUserName(ctx, m.User)
 	}
 
-	files, err := c.buildExportFiles(ctx, m, saveDir)
-	if err != nil {
-		return ExportMessage{}, err
-	}
+	files := c.buildExportFiles(ctx, m, saveDir)
 
-	em := ExportMessage{
-		UserID:        userID,
-		UserName:      userName,
-		PostType:      postType,
-		Timestamp:     slackTSToRFC3339(m.TS),
-		TimestampUnix: m.TS,
-		Text:          m.Text,
-		Files:         files,
-		IsReply:       isReply,
+	attachments := buildExportAttachments(m)
+
+	return ExportMessage{
+		UserID:              userID,
+		UserName:            userName,
+		PostType:            postType,
+		Timestamp:           slackTSToRFC3339(m.TS),
+		TimestampUnix:       m.TS,
+		Text:                m.Text,
+		Files:               files,
+		Attachments:         attachments,
+		Blocks:              m.Blocks,
+		ThreadTimestampUnix: m.ThreadTS,
+		IsReply:             m.ThreadTS != "" && m.ThreadTS != m.TS,
+	}, nil
+}
+
+// buildExportAttachments converts the attachment list from a rawMsg into
+// []ExportAttachment.
+func buildExportAttachments(m rawMsg) []ExportAttachment {
+	if len(m.Attachments) == 0 {
+		return nil
 	}
-	if threadTS != "" {
-		em.ThreadTimestampUnix = threadTS
+	attachments := make([]ExportAttachment, 0, len(m.Attachments))
+	for _, a := range m.Attachments {
+		fields := make([]ExportAttachmentField, 0, len(a.Fields))
+		for _, f := range a.Fields {
+			fields = append(fields, ExportAttachmentField{Title: f.Title, Value: f.Value, Short: f.Short})
+		}
+		attachments = append(attachments, ExportAttachment{
+			Fallback: a.Fallback, Color: a.Color, Pretext: a.Pretext,
+			Title: a.Title, TitleLink: a.TitleLink, Text: a.Text,
+			Fields: fields, Footer: a.Footer, ImageURL: a.ImageURL,
+		})
 	}
-	return em, nil
+	return attachments
 }
 
 // buildExportFiles converts the file list from a rawMsg into []ExportFile,
 // downloading each file to saveDir when saveDir is non-empty.
-func (c *Client) buildExportFiles(ctx context.Context, m rawMsg, saveDir string) ([]ExportFile, error) {
+// Download errors are logged to stderr and the export continues (matching
+// stail's behaviour).
+func (c *Client) buildExportFiles(ctx context.Context, m rawMsg, saveDir string) []ExportFile {
 	files := make([]ExportFile, len(m.Files))
 	for i, f := range m.Files {
 		ef := ExportFile{
@@ -234,17 +274,18 @@ func (c *Client) buildExportFiles(ctx context.Context, m rawMsg, saveDir string)
 			destName := f.ID + "_" + f.Name
 			destPath := filepath.Join(saveDir, destName)
 			if err := c.downloadFileTo(ctx, f.URLPrivateDownload, destPath); err != nil {
-				return nil, fmt.Errorf("download file %s: %w", f.Name, err)
+				fmt.Fprintf(os.Stderr, "warn: download %s: %v\n", f.Name, err)
+			} else {
+				abs, err := filepath.Abs(destPath)
+				if err != nil {
+					abs = destPath
+				}
+				ef.LocalPath = abs
 			}
-			abs, err := filepath.Abs(destPath)
-			if err != nil {
-				abs = destPath
-			}
-			ef.LocalPath = abs
 		}
 		files[i] = ef
 	}
-	return files, nil
+	return files
 }
 
 // downloadFileTo fetches a Slack private file URL using Bearer authentication

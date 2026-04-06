@@ -183,10 +183,11 @@ func TestExportChannel_ThreadExpansion(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/conversations.history":
+			// Slack sets thread_ts on parent messages that have replies.
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"ok": true,
 				"messages": []map[string]interface{}{
-					{"ts": "1000.000000", "user": "U001", "text": "parent", "reply_count": 1},
+					{"ts": "1000.000000", "user": "U001", "text": "parent", "reply_count": 1, "thread_ts": "1000.000000"},
 				},
 				"has_more":          false,
 				"response_metadata": map[string]string{"next_cursor": ""},
@@ -228,8 +229,9 @@ func TestExportChannel_ThreadExpansion(t *testing.T) {
 	if parent.IsReply {
 		t.Error("parent should have IsReply=false")
 	}
-	if parent.ThreadTimestampUnix != "" {
-		t.Errorf("parent should have empty ThreadTimestampUnix, got %q", parent.ThreadTimestampUnix)
+	// Thread parents have thread_ts == ts (not a reply, but thread_timestamp_unix is set).
+	if parent.ThreadTimestampUnix != "1000.000000" {
+		t.Errorf("parent ThreadTimestampUnix: got %q, want %q", parent.ThreadTimestampUnix, "1000.000000")
 	}
 
 	reply := exp.Messages[1]
@@ -361,6 +363,259 @@ func TestExportChannel_NoSaveDir_LocalPathEmpty(t *testing.T) {
 	}
 	if files[0].LocalPath != "" {
 		t.Errorf("LocalPath should be empty without save-dir, got %q", files[0].LocalPath)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// File download error: warn and continue
+// ---------------------------------------------------------------------------
+
+func TestExportChannel_FileDownloadError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/conversations.history":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true,
+				"messages": []map[string]interface{}{
+					{
+						"ts": "1000.000000", "user": "U001", "text": "see files",
+						"files": []map[string]interface{}{
+							{
+								"id": "F001", "name": "good.txt", "mimetype": "text/plain",
+								"url_private_download": "http://" + r.Host + "/files/good",
+							},
+							{
+								"id": "F002", "name": "bad.txt", "mimetype": "text/plain",
+								"url_private_download": "http://" + r.Host + "/files/bad",
+							},
+						},
+					},
+				},
+				"has_more":          false,
+				"response_metadata": map[string]string{"next_cursor": ""},
+			})
+		case "/files/good":
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("ok"))
+		case "/files/bad":
+			http.Error(w, "server error", http.StatusInternalServerError)
+		case "/users.info":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true,
+				"user": map[string]interface{}{
+					"id": "U001", "name": "alice",
+					"profile": map[string]string{"display_name": "Alice", "real_name": "Alice"},
+				},
+			})
+		}
+	}))
+	defer srv.Close()
+
+	saveDir := t.TempDir()
+	c := newTestClient(t, srv)
+	exp, err := c.ExportChannel(t.Context(), "C001", "general", "", "", saveDir)
+	if err != nil {
+		t.Fatalf("ExportChannel should succeed despite download error: %v", err)
+	}
+
+	if len(exp.Messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(exp.Messages))
+	}
+	files := exp.Messages[0].Files
+	if len(files) != 2 {
+		t.Fatalf("expected 2 file entries, got %d", len(files))
+	}
+
+	// First file downloaded successfully.
+	if files[0].LocalPath == "" {
+		t.Error("good.txt should have LocalPath set")
+	}
+	// Second file failed to download; metadata preserved, LocalPath empty.
+	if files[1].ID != "F002" {
+		t.Errorf("file ID: got %q, want F002", files[1].ID)
+	}
+	if files[1].LocalPath != "" {
+		t.Errorf("bad.txt should have empty LocalPath, got %q", files[1].LocalPath)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Attachments and blocks
+// ---------------------------------------------------------------------------
+
+func TestExportChannel_Attachments(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/conversations.history":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true,
+				"messages": []map[string]interface{}{
+					{
+						"ts": "1000.000000", "bot_id": "B001", "username": "alert-bot",
+						"text": "",
+						"attachments": []map[string]interface{}{
+							{
+								"fallback":   "Server is down",
+								"color":      "#ff0000",
+								"title":      "Alert",
+								"title_link": "https://example.com/alert/1",
+								"text":       "Production server is not responding",
+								"fields": []map[string]interface{}{
+									{"title": "Severity", "value": "Critical", "short": true},
+								},
+								"footer":    "Monitoring Bot",
+								"image_url": "https://example.com/chart.png",
+							},
+						},
+					},
+				},
+				"has_more":          false,
+				"response_metadata": map[string]string{"next_cursor": ""},
+			})
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	exp, err := c.ExportChannel(t.Context(), "C001", "general", "", "", "")
+	if err != nil {
+		t.Fatalf("ExportChannel: %v", err)
+	}
+
+	if len(exp.Messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(exp.Messages))
+	}
+	msg := exp.Messages[0]
+	if len(msg.Attachments) != 1 {
+		t.Fatalf("expected 1 attachment, got %d", len(msg.Attachments))
+	}
+	a := msg.Attachments[0]
+	if a.Fallback != "Server is down" {
+		t.Errorf("Fallback = %q", a.Fallback)
+	}
+	if a.Color != "#ff0000" {
+		t.Errorf("Color = %q", a.Color)
+	}
+	if a.Title != "Alert" {
+		t.Errorf("Title = %q", a.Title)
+	}
+	if a.TitleLink != "https://example.com/alert/1" {
+		t.Errorf("TitleLink = %q", a.TitleLink)
+	}
+	if a.Text != "Production server is not responding" {
+		t.Errorf("Text = %q", a.Text)
+	}
+	if len(a.Fields) != 1 || a.Fields[0].Title != "Severity" || a.Fields[0].Value != "Critical" || !a.Fields[0].Short {
+		t.Errorf("Fields = %+v", a.Fields)
+	}
+	if a.Footer != "Monitoring Bot" {
+		t.Errorf("Footer = %q", a.Footer)
+	}
+	if a.ImageURL != "https://example.com/chart.png" {
+		t.Errorf("ImageURL = %q", a.ImageURL)
+	}
+}
+
+func TestExportChannel_Blocks(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/conversations.history":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true,
+				"messages": []map[string]interface{}{
+					{
+						"ts": "1000.000000", "bot_id": "B001", "username": "my-bot",
+						"text": "Hello world",
+						"blocks": []map[string]interface{}{
+							{
+								"type": "section",
+								"text": map[string]interface{}{
+									"type": "mrkdwn",
+									"text": "Hello *world*",
+								},
+							},
+						},
+					},
+				},
+				"has_more":          false,
+				"response_metadata": map[string]string{"next_cursor": ""},
+			})
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	exp, err := c.ExportChannel(t.Context(), "C001", "general", "", "", "")
+	if err != nil {
+		t.Fatalf("ExportChannel: %v", err)
+	}
+
+	if len(exp.Messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(exp.Messages))
+	}
+	msg := exp.Messages[0]
+	if msg.Blocks == nil {
+		t.Fatal("expected non-nil Blocks")
+	}
+
+	var blocks []map[string]interface{}
+	if err := json.Unmarshal(msg.Blocks, &blocks); err != nil {
+		t.Fatalf("unmarshal Blocks: %v", err)
+	}
+	if len(blocks) != 1 {
+		t.Fatalf("expected 1 block, got %d", len(blocks))
+	}
+	if blocks[0]["type"] != "section" {
+		t.Errorf("block type = %v", blocks[0]["type"])
+	}
+}
+
+func TestExportChannel_NoAttachmentsOrBlocks_OmittedInJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/conversations.history":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true,
+				"messages": []map[string]interface{}{
+					{"ts": "1000.000000", "user": "U001", "text": "plain message"},
+				},
+				"has_more":          false,
+				"response_metadata": map[string]string{"next_cursor": ""},
+			})
+		case "/users.info":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true,
+				"user": map[string]interface{}{
+					"id": "U001", "name": "alice",
+					"profile": map[string]string{"display_name": "Alice", "real_name": "Alice"},
+				},
+			})
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	exp, err := c.ExportChannel(t.Context(), "C001", "general", "", "", "")
+	if err != nil {
+		t.Fatalf("ExportChannel: %v", err)
+	}
+
+	b, err := json.Marshal(exp)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	s := string(b)
+
+	// attachments and blocks should be omitted when empty (omitempty).
+	if strings.Contains(s, `"attachments"`) {
+		t.Error("attachments should be omitted when empty")
+	}
+	if strings.Contains(s, `"blocks"`) {
+		t.Error("blocks should be omitted when empty")
 	}
 }
 
