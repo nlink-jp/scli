@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.6.0] - 2026-04-06
+
+### Added
+
+- **Attachments in channel export** — Legacy rich attachments (URL unfurls, bot cards) are now included in the export JSON as `attachments` array with `fallback`, `color`, `title`, `text`, `fields`, `footer`, and `image_url`.
+- **Blocks in channel export** — Block Kit payloads are preserved as raw JSON in the `blocks` field.
+- **`docs/EXPORT_FORMAT.md`** — Shared export schema specification covering scat, stail, and scli.
+
+### Fixed
+
+- **`thread_timestamp_unix`** — Now set directly from Slack API's `thread_ts` field, matching stail's behavior. Thread parents include the field (previously omitted).
+- **File download error handling** — Download failures during export now log a warning and continue instead of aborting the entire export.
+
 ## [1.5.4] - 2026-03-31
 
 ### Fixed
