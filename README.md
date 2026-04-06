@@ -45,6 +45,7 @@ scli auth login
 | `scli auth list` | Show authenticated workspaces |
 | `scli channel list` | List channels you are a member of |
 | `scli channel read <channel>` | Read messages from a channel |
+| `scli channel export <channel>` | Export channel history to JSON ([format](docs/EXPORT_FORMAT.md)) |
 | `scli dm list` | List open DM conversations |
 | `scli dm read <user>` | Read DM messages |
 | `scli dm send <user> [message]` | Send a direct message (supports Block Kit) |
