@@ -57,7 +57,7 @@ cmd/
   root.go          # グローバルフラグ: --workspace, --json, --no-color
   auth.go          # auth login / logout / list
   workspace.go     # workspace list / use
-  channel.go       # channel list / read / info / search
+  channel.go       # channel list / joined / read / info / search
   post.go          # post（--blocks / --blocks-file 対応）
   dm.go            # dm list / send / read
   unread.go        # unread
@@ -130,7 +130,7 @@ Slack Web APIクライアント。各メソッドが1つのAPIエンドポイン
 
 **キャッシュ**（大規模ワークスペースでのパフォーマンス向上のため）：
 
-- `ListChannels` と `ListUsers` は結果をTTL 1時間でディスクにキャッシュ。
+- `ListChannels`・`ListJoinedChannels`・`ListUsers` は結果をTTL 1時間でディスクにキャッシュ。
   キャッシュ場所: `~/.config/scli/cache/<workspace>/`（ワークスペースごとに分離し、クロスワークスペース汚染を防止）。
 - `GetUser` はさらにインメモリの `map[string]User` を保持し、同一プロセス内での繰り返し検索を高速化。
 - `cache clear` でワークスペースのキャッシュディレクトリを削除可能。
@@ -189,7 +189,8 @@ scli workspace use <name>               デフォルトワークスペースを�
 ### チャンネル
 
 ```
-scli channel list                       参加中のチャンネルを一覧表示
+scli channel list                       表示可能なチャンネルを一覧表示（参加・未参加問わず）
+scli channel joined                     参加中のチャンネルを一覧表示
 scli channel read <channel>             最近のメッセージを読む
   [--limit N]                           取得件数（デフォルト: 20）
   [--unread]                            未読メッセージのみ表示

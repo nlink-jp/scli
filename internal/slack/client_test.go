@@ -41,14 +41,21 @@ func TestListChannels(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListChannels: %v", err)
 	}
-	if len(channels) != 2 {
-		t.Errorf("expected 2 member channels, got %d", len(channels))
+	// All visible channels are returned regardless of membership.
+	if len(channels) != 3 {
+		t.Errorf("expected 3 channels, got %d", len(channels))
 	}
 	if channels[0].Name != "general" {
 		t.Errorf("expected first channel 'general', got %q", channels[0].Name)
 	}
 	if channels[0].UnreadCount != 3 {
 		t.Errorf("expected unread_count 3, got %d", channels[0].UnreadCount)
+	}
+	if channels[0].IsMember != true {
+		t.Errorf("general: IsMember: got false, want true")
+	}
+	if channels[2].IsMember != false {
+		t.Errorf("not-member: IsMember: got true, want false")
 	}
 }
 

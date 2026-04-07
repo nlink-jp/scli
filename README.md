@@ -43,7 +43,8 @@ scli auth login
 | `scli auth login` | Authenticate with Slack (OAuth 2.0 PKCE) |
 | `scli auth logout` | Remove stored credentials |
 | `scli auth list` | Show authenticated workspaces |
-| `scli channel list` | List channels you are a member of |
+| `scli channel list` | List all visible channels (public and private) |
+| `scli channel joined` | List channels you are a member of |
 | `scli channel read <channel>` | Read messages from a channel |
 | `scli channel export <channel>` | Export channel history to JSON ([format](docs/EXPORT_FORMAT.md)) |
 | `scli dm list` | List open DM conversations |

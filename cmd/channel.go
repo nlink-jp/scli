@@ -23,7 +23,7 @@ var (
 
 var channelListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List channels you are a member of",
+	Short: "List all visible channels (public and private)",
 	RunE:  runChannelList,
 }
 
@@ -48,12 +48,18 @@ var channelSearchCmd = &cobra.Command{
 	RunE:  runChannelSearch,
 }
 
+var channelJoinedCmd = &cobra.Command{
+	Use:   "joined",
+	Short: "List channels you are a member of",
+	RunE:  runChannelJoined,
+}
+
 func init() {
 	channelReadCmd.Flags().IntVarP(&channelReadLimit, "limit", "n", 20, "Number of messages to fetch")
 	channelReadCmd.Flags().BoolVar(&channelReadUnread, "unread", false, "Show only unread messages")
 	channelReadCmd.Flags().StringVar(&channelReadThread, "thread", "", "Show a specific thread (message timestamp)")
 
-	channelCmd.AddCommand(channelListCmd, channelReadCmd, channelInfoCmd, channelSearchCmd)
+	channelCmd.AddCommand(channelListCmd, channelReadCmd, channelInfoCmd, channelSearchCmd, channelJoinedCmd)
 	rootCmd.AddCommand(channelCmd)
 }
 
@@ -181,6 +187,26 @@ func runChannelList(cmd *cobra.Command, _ []string) error {
 
 	if len(channels) == 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), "No channels found. Try joining some channels in Slack.")
+		return nil
+	}
+
+	p := newPrinter(cmd)
+	return p.Channels(channels, "")
+}
+
+func runChannelJoined(cmd *cobra.Command, _ []string) error {
+	client, err := newSlackClient()
+	if err != nil {
+		return err
+	}
+
+	channels, err := client.ListJoinedChannels(cmd.Context())
+	if err != nil {
+		return fmt.Errorf("list joined channels: %w", err)
+	}
+
+	if len(channels) == 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "You are not a member of any channels.")
 		return nil
 	}
 

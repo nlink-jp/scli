@@ -445,3 +445,84 @@ func TestRetryAfterDuration_InvalidHeader(t *testing.T) {
 		t.Errorf("got %v, want 5s fallback", got)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// ListJoinedChannels: uses users.conversations, sets IsMember=true
+// ---------------------------------------------------------------------------
+
+func TestListJoinedChannels(t *testing.T) {
+	var calledPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calledPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok": true,
+			"channels": []map[string]interface{}{
+				{"id": "C001", "name": "general",
+					"purpose": map[string]string{"value": "General discussion"}},
+				{"id": "G002", "name": "private-team",
+					"purpose": map[string]string{"value": "Team only"}},
+			},
+			"response_metadata": map[string]string{"next_cursor": ""},
+		})
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	channels, err := c.ListJoinedChannels(t.Context())
+	if err != nil {
+		t.Fatalf("ListJoinedChannels: %v", err)
+	}
+
+	// Verify the correct API endpoint was called.
+	if calledPath != "/users.conversations" {
+		t.Errorf("endpoint: got %q, want %q", calledPath, "/users.conversations")
+	}
+
+	if len(channels) != 2 {
+		t.Fatalf("expected 2 channels, got %d", len(channels))
+	}
+	// All returned channels must have IsMember=true.
+	for _, ch := range channels {
+		if !ch.IsMember {
+			t.Errorf("channel %q: IsMember should be true", ch.Name)
+		}
+	}
+}
+
+func TestListJoinedChannels_UsesDiskCache(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok": true,
+			"channels": []map[string]interface{}{
+				{"id": "C001", "name": "general",
+					"purpose": map[string]string{"value": "General discussion"}},
+			},
+			"response_metadata": map[string]string{"next_cursor": ""},
+		})
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	c.SetCacheDir(t.TempDir())
+
+	// First call: hits the API and writes cache.
+	ch1, err := c.ListJoinedChannels(t.Context())
+	if err != nil {
+		t.Fatalf("first ListJoinedChannels: %v", err)
+	}
+	// Second call: should use the cache, not the API.
+	ch2, err := c.ListJoinedChannels(t.Context())
+	if err != nil {
+		t.Fatalf("second ListJoinedChannels: %v", err)
+	}
+	if calls.Load() != 1 {
+		t.Errorf("expected 1 API call, got %d", calls.Load())
+	}
+	if len(ch1) != len(ch2) || ch1[0].ID != ch2[0].ID {
+		t.Errorf("cached result differs: %+v vs %+v", ch1, ch2)
+	}
+}
