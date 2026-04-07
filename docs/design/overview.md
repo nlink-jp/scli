@@ -59,7 +59,7 @@ cmd/
   root.go          # global flags: --workspace, --json, --no-color
   auth.go          # auth login / logout / list
   workspace.go     # workspace list / use
-  channel.go       # channel list / read / info / search
+  channel.go       # channel list / joined / read / info / search
   post.go          # post (with --blocks / --blocks-file support)
   dm.go            # dm list / send / read
   unread.go        # unread
@@ -132,7 +132,7 @@ Slack Web API client. Each method maps to one API endpoint.
 
 **Caching** (for large-workspace performance):
 
-- `ListChannels` and `ListUsers` cache results to disk with a 1-hour TTL.
+- `ListChannels`, `ListJoinedChannels`, and `ListUsers` cache results to disk with a 1-hour TTL.
   Cache location: `~/.config/scli/cache/<workspace>/` (workspace-specific to prevent cross-workspace contamination).
 - `GetUser` additionally maintains an in-memory `map[string]User` for repeated lookups within a single process.
 - `cache clear` removes the workspace cache directory.
@@ -192,7 +192,8 @@ scli workspace use <name>               Sets default workspace
 ### Channel
 
 ```
-scli channel list                       Lists channels the user is a member of
+scli channel list                       Lists all visible channels (public and private)
+scli channel joined                     Lists channels the user is a member of
 scli channel read <channel>             Reads recent messages
   [--limit N]                           Number of messages (default: 20)
   [--unread]                            Only show messages since last read

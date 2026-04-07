@@ -43,7 +43,8 @@ scli auth login
 | `scli auth login` | Slack 認証（OAuth 2.0 PKCE） |
 | `scli auth logout` | 認証情報の削除 |
 | `scli auth list` | 認証済みワークスペース一覧 |
-| `scli channel list` | 参加中チャンネルの一覧 |
+| `scli channel list` | 表示可能なチャンネルの一覧（参加・未参加問わず） |
+| `scli channel joined` | 参加中のチャンネルの一覧 |
 | `scli channel read <channel>` | チャンネルのメッセージを読む |
 | `scli dm list` | オープン中 DM 一覧 |
 | `scli dm read <user>` | DM を読む |

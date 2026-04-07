@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.7.0] - 2026-04-07
+
+### Added
+
+- **`channel joined`** — New command that lists only the channels the authenticated user is a member of. Uses `users.conversations` instead of `conversations.list`, so the full workspace channel list is never fetched (more efficient). Results are cached separately under `joined_channels.json`.
+
+### Fixed
+
+- **`channel list`** — Now returns all visible channels regardless of membership, as originally intended. Previously the `IsMember` filter incorrectly excluded channels the user had not joined.
+
+---
+
 ## [1.6.0] - 2026-04-06
 
 ### Added

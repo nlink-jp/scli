@@ -45,7 +45,8 @@ scli auth login
 | `scli auth login` | Slack で認証（OAuth 2.0 PKCE） |
 | `scli auth logout` | 保存された認証情報を削除 |
 | `scli auth list` | 認証済みワークスペースの一覧 |
-| `scli channel list` | 参加中のチャンネル一覧 |
+| `scli channel list` | 表示可能なチャンネルの一覧（参加・未参加問わず） |
+| `scli channel joined` | 参加中のチャンネルの一覧 |
 | `scli channel read <channel>` | チャンネルのメッセージを読む |
 | `scli channel export <channel>` | チャンネル履歴を JSON にエクスポート（[フォーマット](docs/EXPORT_FORMAT.md)） |
 | `scli dm list` | DM 会話の一覧 |

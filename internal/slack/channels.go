@@ -54,9 +54,6 @@ func (c *Client) ListChannels(ctx context.Context) ([]Channel, error) {
 		}
 
 		for _, ch := range resp.Channels {
-			if !ch.IsMember {
-				continue
-			}
 			all = append(all, Channel{
 				ID:          ch.ID,
 				Name:        ch.Name,
@@ -74,6 +71,71 @@ func (c *Client) ListChannels(ctx context.Context) ([]Channel, error) {
 
 	if c.cacheDir != "" {
 		saveCache(filepath.Join(c.cacheDir, "channels.json"), all)
+	}
+	return all, nil
+}
+
+// ListJoinedChannels returns only the channels the authenticated user is a member of.
+// It calls users.conversations instead of conversations.list, which avoids fetching
+// the full workspace channel list and is therefore more efficient.
+// Results are cached on disk for channelCacheTTL.
+func (c *Client) ListJoinedChannels(ctx context.Context) ([]Channel, error) {
+	cacheFile := filepath.Join(c.cacheDir, "joined_channels.json")
+	if c.cacheDir != "" {
+		if channels, ok := loadCache[[]Channel](cacheFile, channelCacheTTL); ok {
+			return channels, nil
+		}
+	}
+
+	var all []Channel
+	cursor := ""
+
+	for {
+		params := url.Values{
+			"types":            {"public_channel,private_channel"},
+			"exclude_archived": {"true"},
+			"limit":            {"200"},
+		}
+		if cursor != "" {
+			params.Set("cursor", cursor)
+		}
+
+		var resp struct {
+			Channels []struct {
+				ID      string `json:"id"`
+				Name    string `json:"name"`
+				Purpose struct {
+					Value string `json:"value"`
+				} `json:"purpose"`
+				UnreadCount int `json:"unread_count"`
+			} `json:"channels"`
+			ResponseMetadata struct {
+				NextCursor string `json:"next_cursor"`
+			} `json:"response_metadata"`
+		}
+
+		if err := c.get(ctx, "users.conversations", params, &resp); err != nil {
+			return nil, fmt.Errorf("users.conversations: %w", err)
+		}
+
+		for _, ch := range resp.Channels {
+			all = append(all, Channel{
+				ID:          ch.ID,
+				Name:        ch.Name,
+				Purpose:     ch.Purpose.Value,
+				IsMember:    true,
+				UnreadCount: ch.UnreadCount,
+			})
+		}
+
+		if resp.ResponseMetadata.NextCursor == "" {
+			break
+		}
+		cursor = resp.ResponseMetadata.NextCursor
+	}
+
+	if c.cacheDir != "" {
+		saveCache(cacheFile, all)
 	}
 	return all, nil
 }
