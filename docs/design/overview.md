@@ -156,6 +156,7 @@ Required OAuth scopes (user token):
 | `im:history` | Read DM messages |
 | `mpim:history` | Read group DM messages |
 | `chat:write` | Post messages |
+| `files:read` | Download attached files |
 | `files:write` | Upload files |
 | `search:read` | Search messages |
 | `users:read` | Resolve user names and profiles |

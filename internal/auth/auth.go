@@ -36,7 +36,7 @@ const (
 	// userScopes lists all OAuth user token scopes required by scli.
 	userScopes = "channels:read,groups:read,im:read,im:write,mpim:read," +
 		"channels:history,groups:history,im:history,mpim:history," +
-		"chat:write,files:write,search:read,users:read"
+		"chat:write,files:read,files:write,search:read,users:read"
 )
 
 // Config holds the OAuth application credentials.
