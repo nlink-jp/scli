@@ -6,11 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.7.2] - 2026-04-24
+
+### Fixed
+
+- **File download in channel export** — Downloaded files contained HTML ("This browser is no longer supported") instead of actual content. Root cause: the `files:read` OAuth scope was missing from the token request, so Slack rejected Bearer tokens for `url_private_download` and redirected to a login page. Users must re-authenticate (`scli auth login`) after upgrading.
+
+---
+
 ## [1.7.1] - 2026-04-24
 
 ### Fixed
 
-- **File download in channel export** — Downloaded files contained HTML instead of actual content. Go's default `http.Client` strips the `Authorization` header on cross-domain redirects; Slack's `url_private_download` redirects to a CDN on a different origin, causing an HTML login page to be saved. Fixed by preserving the header across redirect hops.
+- **File download redirect handling** — Preserve `Authorization` header across cross-domain redirects when downloading attached files. Go's default `http.Client` strips the header on cross-origin redirects, which could cause authentication failures with CDN-hosted files.
 
 ---
 
