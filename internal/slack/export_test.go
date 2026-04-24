@@ -2,6 +2,7 @@ package slack_test
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -314,6 +315,98 @@ func TestExportChannel_FileDownload(t *testing.T) {
 	}
 	if string(downloaded) != string(fileContent) {
 		t.Errorf("downloaded content: got %q, want %q", downloaded, fileContent)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// File download with cross-domain redirect (regression test)
+// ---------------------------------------------------------------------------
+
+func TestExportChannel_FileDownloadRedirect(t *testing.T) {
+	fileContent := []byte("redirected file content")
+
+	// CDN server: simulates cross-domain file hosting.
+	// Returns the actual file only when the Authorization header is present;
+	// returns HTML (simulating a login page) when auth is missing — which is
+	// exactly the bug this test guards against.
+	cdnSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "" {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte("<html><body>Sign in to Slack</body></html>"))
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = w.Write(fileContent)
+	}))
+	defer cdnSrv.Close()
+
+	// Build the CDN redirect target using "localhost" instead of "127.0.0.1"
+	// so that Go's http.Client treats it as a different origin and would
+	// normally strip the Authorization header during redirect.
+	_, cdnPort, _ := net.SplitHostPort(cdnSrv.Listener.Addr().String())
+	cdnURL := "http://localhost:" + cdnPort
+
+	var srvRef *httptest.Server
+	srvRef = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { //nolint:staticcheck
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/conversations.history":
+			fileURL := "http://" + srvRef.Listener.Addr().String() + "/files-pri/F001"
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true,
+				"messages": []map[string]interface{}{
+					{
+						"ts": "1000.000000", "user": "U001", "text": "see file",
+						"files": []map[string]interface{}{
+							{
+								"id": "F001", "name": "test.txt", "mimetype": "text/plain",
+								"url_private_download": fileURL,
+							},
+						},
+					},
+				},
+				"has_more":          false,
+				"response_metadata": map[string]string{"next_cursor": ""},
+			})
+		case "/files-pri/F001":
+			// Simulate Slack redirecting to a CDN on a different origin.
+			http.Redirect(w, r, cdnURL+"/cdn/F001", http.StatusFound)
+		case "/users.info":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok": true,
+				"user": map[string]interface{}{
+					"id": "U001", "name": "alice",
+					"profile": map[string]string{"display_name": "Alice", "real_name": "Alice"},
+				},
+			})
+		}
+	}))
+	defer srvRef.Close()
+
+	saveDir := t.TempDir()
+	c := newTestClient(t, srvRef)
+	exp, err := c.ExportChannel(t.Context(), "C001", "general", "", "", saveDir)
+	if err != nil {
+		t.Fatalf("ExportChannel: %v", err)
+	}
+
+	if len(exp.Messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(exp.Messages))
+	}
+	files := exp.Messages[0].Files
+	if len(files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(files))
+	}
+	if files[0].LocalPath == "" {
+		t.Fatal("LocalPath should be set after download")
+	}
+
+	downloaded, err := os.ReadFile(filepath.Join(saveDir, "F001_test.txt"))
+	if err != nil {
+		t.Fatalf("read downloaded file: %v", err)
+	}
+	if string(downloaded) != string(fileContent) {
+		t.Errorf("downloaded content: got %q, want %q (bug: HTML login page saved instead of file)", downloaded, fileContent)
 	}
 }
 
