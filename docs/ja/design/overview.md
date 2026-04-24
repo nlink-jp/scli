@@ -153,6 +153,7 @@ HTTPクライアントはHTTP 429レスポンスを受けた場合、`Retry-Afte
 | `im:history` | DMメッセージ読み取り |
 | `mpim:history` | グループDMメッセージ読み取り |
 | `chat:write` | メッセージ投稿 |
+| `files:read` | 添付ファイルのダウンロード |
 | `files:write` | ファイルアップロード |
 | `search:read` | メッセージ検索 |
 | `users:read` | ユーザー名・プロフィール解決 |
