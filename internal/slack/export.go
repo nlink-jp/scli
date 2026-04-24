@@ -291,8 +291,24 @@ func (c *Client) buildExportFiles(ctx context.Context, m rawMsg, saveDir string)
 // downloadFileTo fetches a Slack private file URL using Bearer authentication
 // and writes the contents to destPath. It retries on HTTP 429 responses,
 // honouring the Retry-After header.
+//
+// Slack's url_private_download may redirect to a different host (e.g., a CDN).
+// Go's default http.Client strips the Authorization header on cross-domain
+// redirects, which causes the target to return an HTML login/error page instead
+// of the file content. We use a client that preserves the header.
 func (c *Client) downloadFileTo(ctx context.Context, fileURL, destPath string) error {
 	const maxRetries = 3
+
+	dlClient := *c.httpClient
+	dlClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 10 {
+			return fmt.Errorf("stopped after 10 redirects")
+		}
+		if auth := via[0].Header.Get("Authorization"); auth != "" {
+			req.Header.Set("Authorization", auth)
+		}
+		return nil
+	}
 
 	for attempt := range maxRetries {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fileURL, nil)
@@ -301,7 +317,7 @@ func (c *Client) downloadFileTo(ctx context.Context, fileURL, destPath string) e
 		}
 		req.Header.Set("Authorization", "Bearer "+c.token)
 
-		resp, err := c.httpClient.Do(req)
+		resp, err := dlClient.Do(req)
 		if err != nil {
 			return fmt.Errorf("HTTP request: %w", err)
 		}
