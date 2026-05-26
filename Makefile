@@ -64,7 +64,11 @@ package: build-all
 		$(eval GOARCH=$(word 2,$(subst /, ,$(platform)))) \
 		$(eval EXT=$(if $(filter windows,$(GOOS)),.exe,)) \
 		$(eval ARCHIVE=dist/$(BINARY_NAME)-$(VERSION)-$(GOOS)-$(GOARCH).zip) \
-		zip -j $(ARCHIVE) dist/$(BINARY_NAME)-$(GOOS)-$(GOARCH)$(EXT) LICENSE README.md ; \
+		$(eval STAGE=dist/_pkg-$(GOOS)-$(GOARCH)) \
+		rm -rf $(STAGE) && mkdir -p $(STAGE) ; \
+		cp dist/$(BINARY_NAME)-$(GOOS)-$(GOARCH)$(EXT) $(STAGE)/$(BINARY_NAME)$(EXT) ; \
+		zip -j $(ARCHIVE) $(STAGE)/$(BINARY_NAME)$(EXT) LICENSE README.md ; \
+		rm -rf $(STAGE) ; \
 	)
 	@scripts/notarize-darwin.sh dist/$(BINARY_NAME)-$(VERSION)-darwin-amd64.zip "$(NOTARY_PROFILE)"
 	@scripts/notarize-darwin.sh dist/$(BINARY_NAME)-$(VERSION)-darwin-arm64.zip "$(NOTARY_PROFILE)"
