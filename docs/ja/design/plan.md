@@ -23,7 +23,7 @@
 - [ ] `go mod init github.com/<org>/scli`
 - [ ] ディレクトリ構成（`cmd/`, `internal/`, `docs/`, `scripts/hooks/`）
 - [ ] `Makefile`（ターゲット: `build`, `build-all`, `test`, `lint`, `check`, `setup`, `clean`）
-- [ ] クロスコンパイルターゲット: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`
+- [ ] クロスコンパイルターゲット: `linux/amd64`, `linux/arm64`, `darwin/arm64`, `windows/amd64` (darwin は arm64 のみ)
 - [ ] `cobra` ルートコマンド（`cmd/root.go`）グローバルフラグ: `--workspace`, `--json`, `--no-color`
 - [ ] Gitフック（`scripts/hooks/pre-commit`, `scripts/hooks/pre-push`）で `make check` を実行
 - [ ] `make setup` でフックを自動インストール

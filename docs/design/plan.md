@@ -23,7 +23,7 @@
 - [ ] `go mod init github.com/<org>/scli`
 - [ ] Directory structure (`cmd/`, `internal/`, `docs/`, `scripts/hooks/`)
 - [ ] `Makefile` with targets: `build`, `build-all`, `test`, `lint`, `check`, `setup`, `clean`
-- [ ] Cross-compilation targets: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`
+- [ ] Cross-compilation targets: `linux/amd64`, `linux/arm64`, `darwin/arm64`, `windows/amd64` (darwin is arm64-only)
 - [ ] `cobra` root command (`cmd/root.go`) with global flags: `--workspace`, `--json`, `--no-color`
 - [ ] Git hooks (`scripts/hooks/pre-commit`, `scripts/hooks/pre-push`) running `make check`
 - [ ] `make setup` installs hooks automatically

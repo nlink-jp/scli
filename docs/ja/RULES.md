@@ -83,7 +83,7 @@
 
 - Go はネイティブ/コンパイル済みコードの基本言語。
 - ビルドシステム: プロジェクトルートの `Makefile` を使った GNU `make`。
-- ターゲットプラットフォーム: `linux/amd64`、`linux/arm64`、`darwin/amd64`、`darwin/arm64`、`windows/amd64`。
+- ターゲットプラットフォーム: `linux/amd64`、`linux/arm64`、`darwin/arm64`、`windows/amd64`。darwin は arm64 のみ（Intel なし）。
   - OS レベルの制約により Windows サポートが困難な場合は、`linux` と `darwin` で可。
 - クロスコンパイルは単一ホストマシンから動作しなければならない（`GOOS`/`GOARCH` 変数を使用）。
 - コードスタイル: `gofmt` と `golangci-lint` で強制。
