@@ -74,7 +74,7 @@ All contributors (including Claude Code) must follow these rules.
 ## 13. Design Before Implementation
 
 - Before writing any production code, step back and review the overall system:
-  1. Write a high-level design document (`docs/design/`).
+  1. Write a high-level design document (`docs/en/design/`).
   2. Produce a development plan with phases and milestones.
   3. Get explicit sign-off before starting implementation.
 - When integrating with external APIs (e.g., Slack Web API), enumerate **all required OAuth scopes** at design time and cross-check them against every API method that will be called. Discovering a missing scope at runtime is a preventable error.
@@ -99,7 +99,7 @@ All contributors (including Claude Code) must follow these rules.
 
 - The development environment runs inside a sandbox with restricted filesystem and network access.
 - Build scripts must not assume unrestricted outbound network access; vendor or cache dependencies where needed.
-- Document any host-level prerequisites in `docs/setup.md`.
+- Document any host-level prerequisites in `docs/en/setup.md`.
 
 ## 17. Git and GitHub
 
@@ -116,7 +116,7 @@ All contributors (including Claude Code) must follow these rules.
 ## 18. Dependency Management
 
 - Add third-party dependencies only when genuinely necessary.
-- For each dependency added, document in `docs/dependencies.md`:
+- For each dependency added, document in `docs/en/dependencies.md`:
   - Purpose and why an in-house solution was not preferred.
   - License and any compliance considerations.
 - Remove unused dependencies promptly.
@@ -138,7 +138,7 @@ All contributors (including Claude Code) must follow these rules.
   4. Run security scans (see Rule 21).
 - A Git **pre-commit hook** (managed via the repo, e.g., under `scripts/hooks/`) runs `make check` before every commit; commits are rejected if any step fails.
 - A Git **pre-push hook** performs the same checks before pushing to the remote.
-- Hook installation is documented in `docs/setup.md` and can be automated with `make setup`.
+- Hook installation is documented in `docs/en/setup.md` and can be automated with `make setup`.
 
 ## 21. Security Scanning
 
@@ -162,4 +162,4 @@ All contributors (including Claude Code) must follow these rules.
 
 ---
 
-*Primary language for this document: English. Japanese translation: `docs/ja/RULES.md`*
+*Primary language for this document: English. Japanese translation: `docs/ja/RULES.ja.md`*

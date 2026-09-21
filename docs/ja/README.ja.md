@@ -30,7 +30,7 @@ make build-all      # 全対象プラットフォームにクロスコンパイ�
 
 ### 初回セットアップ
 
-Slack アプリの作成と認証の手順は [docs/ja/setup.md](setup.md) を参照してください。
+Slack アプリの作成と認証の手順は [docs/ja/setup.ja.md](setup.ja.md) を参照してください。
 
 ```sh
 scli auth login

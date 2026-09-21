@@ -285,8 +285,10 @@ scli/
     slack/              Slack API client (includes disk/memory cache)
     output/             Formatter (color / JSON)
   docs/
-    design/             Design documents (English)
+    en/                 English documents
+      design/           Design documents (English)
     ja/                 Japanese translations
+      design/           Design documents (Japanese)
   scripts/
     hooks/              Git hooks (pre-commit, pre-push)
   Makefile
@@ -317,4 +319,4 @@ scli/
 
 ---
 
-*Japanese translation: `docs/ja/design/overview.md`*
+*Japanese translation: `docs/ja/design/overview.ja.md`*

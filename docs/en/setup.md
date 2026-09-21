@@ -174,4 +174,4 @@ scli channel list
 
 ---
 
-*Japanese translation: `docs/ja/setup.md`*
+*Japanese translation: `docs/ja/setup.ja.md`*

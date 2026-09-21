@@ -56,7 +56,7 @@
   - Integration test (mock Slack OAuth endpoint)
 - [ ] `cmd/auth.go` — `scli auth login / logout / list`
 - [ ] `cmd/workspace.go` — `scli workspace list / use`
-- [ ] `docs/setup.md` updated with any changes discovered during implementation
+- [ ] `docs/en/setup.md` updated with any changes discovered during implementation
 
 ### Completion Criteria
 
@@ -164,9 +164,9 @@ Search returns results with channel context.
 - [ ] `govulncheck ./...` clean
 - [ ] All `golangci-lint` warnings resolved
 - [ ] Cross-compilation verified on all 5 targets
-- [ ] `docs/dependencies.md` completed
-- [ ] `docs/setup.md` and `docs/ja/setup.md` final review
-- [ ] `docs/design/overview.md` updated to reflect any implementation changes
+- [ ] `docs/en/dependencies.md` completed
+- [ ] `docs/en/setup.md` and `docs/ja/setup.ja.md` final review
+- [ ] `docs/en/design/overview.md` updated to reflect any implementation changes
 - [ ] `CHANGELOG.md` v1.0.0 entry
 - [ ] Git tag `v1.0.0`
 
@@ -186,8 +186,8 @@ All documentation is in sync with the implementation.
 | `github.com/fatih/color` | ANSI color output | 2 |
 | `github.com/joho/godotenv` | `.env` file loading | 1 |
 
-All dependencies to be documented in `docs/dependencies.md` before use.
+All dependencies to be documented in `docs/en/dependencies.md` before use.
 
 ---
 
-*Japanese translation: `docs/ja/design/plan.md`*
+*Japanese translation: `docs/ja/design/plan.ja.md`*

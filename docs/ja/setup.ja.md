@@ -169,4 +169,4 @@ scli channel list
 
 ---
 
-*原文（英語）: `docs/setup.md`*
+*原文（英語）: `docs/en/setup.md`*

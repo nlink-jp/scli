@@ -56,7 +56,7 @@
   - 統合テスト（Slack OAuthエンドポイントをモック）
 - [ ] `cmd/auth.go` — `scli auth login / logout / list`
 - [ ] `cmd/workspace.go` — `scli workspace list / use`
-- [ ] 実装中に発見した変更を `docs/setup.md` に反映
+- [ ] 実装中に発見した変更を `docs/en/setup.md` に反映
 
 ### 完了基準
 
@@ -164,9 +164,9 @@ DM会話一覧の表示、メッセージ読み取り、`@名前` またはユ�
 - [ ] `govulncheck ./...` でクリーン
 - [ ] `golangci-lint` の警告をすべて解消
 - [ ] 全5ターゲットでのクロスコンパイルを検証
-- [ ] `docs/dependencies.md` の完成
-- [ ] `docs/setup.md` と `docs/ja/setup.md` の最終レビュー
-- [ ] 実装との乖離がないか `docs/design/overview.md` を更新
+- [ ] `docs/en/dependencies.md` の完成
+- [ ] `docs/en/setup.md` と `docs/ja/setup.ja.md` の最終レビュー
+- [ ] 実装との乖離がないか `docs/en/design/overview.md` を更新
 - [ ] `CHANGELOG.md` に v1.0.0 エントリを追加
 - [ ] Gitタグ `v1.0.0` を打つ
 
@@ -186,8 +186,8 @@ DM会話一覧の表示、メッセージ読み取り、`@名前` またはユ�
 | `github.com/fatih/color` | ANSIカラー出力 | 2 |
 | `github.com/joho/godotenv` | `.env`ファイル読み込み | 1 |
 
-すべての依存ライブラリは使用前に `docs/dependencies.md` へ記載すること。
+すべての依存ライブラリは使用前に `docs/en/dependencies.md` へ記載すること。
 
 ---
 
-*原文（英語）: `docs/design/plan.md`*
+*原文（英語）: `docs/en/design/plan.md`*

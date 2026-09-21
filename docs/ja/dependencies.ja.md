@@ -124,4 +124,4 @@
 
 *最終更新: 2026-03-20*
 
-*原文（英語）: `docs/dependencies.md`*
+*原文（英語）: `docs/en/dependencies.md`*

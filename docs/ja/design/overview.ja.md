@@ -281,8 +281,10 @@ scli/
     slack/              Slack APIクライアント（ディスク/インメモリキャッシュを含む）
     output/             フォーマッタ（カラー / JSON）
   docs/
-    design/             設計ドキュメント（英語）
+    en/                 英語ドキュメント
+      design/           設計ドキュメント（英語）
     ja/                 日本語翻訳
+      design/           設計ドキュメント（日本語）
   scripts/
     hooks/              Gitフック（pre-commit, pre-push）
   Makefile
@@ -313,4 +315,4 @@ scli/
 
 ---
 
-*原文（英語）: `docs/design/overview.md`*
+*原文（英語）: `docs/en/design/overview.md`*
