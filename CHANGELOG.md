@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Security
+
+- **The Slack token now follows a file-download redirect only within the
+  domain the download started in.** `url_private_download` answers with a
+  redirect and the target serves the bytes only to a request carrying the
+  token, so the header is re-attached (Go re-sends it to a subdomain but not
+  to a sibling host) — but it was re-attached to *whatever host the redirect
+  named*, for up to ten hops. A redirect target is chosen by the server, so
+  that handed the workspace token to any host Slack, or anything answering for
+  Slack, pointed at. Outside the starting domain the token is now held back;
+  the download then fails with a message naming the host instead of saving the
+  sign-in page that host returns under the file's name. Downloads from Slack
+  are unaffected (they stay within `slack.com`).
+
 ## [1.8.0] - 2026-07-12
 
 ### Removed

@@ -319,16 +319,25 @@ func TestExportChannel_FileDownload(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// File download with cross-domain redirect (regression test)
+// File download with a redirect out of the starting domain (regression test)
 // ---------------------------------------------------------------------------
 
-func TestExportChannel_FileDownloadRedirect(t *testing.T) {
+// TestExportChannel_ForeignRedirectSavesNothing is the export-level view of
+// the redirect rule. The redirect here leaves the domain the download started
+// in, so the token is held back (tokenMayFollowRedirect) and the target
+// answers with a sign-in page. Both outcomes are the point: the page must not
+// be saved under the file's name, and the export must not claim a local copy
+// that is really a web page.
+//
+// The redirect that Slack actually performs — to a sibling host in the same
+// domain — does carry the token, and is covered by
+// TestDownloadFileTo_SiblingHostRedirectGetsTheToken.
+func TestExportChannel_ForeignRedirectSavesNothing(t *testing.T) {
 	fileContent := []byte("redirected file content")
 
-	// CDN server: simulates cross-domain file hosting.
-	// Returns the actual file only when the Authorization header is present;
-	// returns HTML (simulating a login page) when auth is missing — which is
-	// exactly the bug this test guards against.
+	// CDN server on an unrelated host. It serves the file only to a request
+	// carrying the Authorization header, and an HTML sign-in page otherwise —
+	// the real behaviour of Slack's download target.
 	cdnSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") == "" {
 			w.Header().Set("Content-Type", "text/html")
@@ -397,16 +406,14 @@ func TestExportChannel_FileDownloadRedirect(t *testing.T) {
 	if len(files) != 1 {
 		t.Fatalf("expected 1 file, got %d", len(files))
 	}
-	if files[0].LocalPath == "" {
-		t.Fatal("LocalPath should be set after download")
+	if files[0].LocalPath != "" {
+		t.Errorf("LocalPath is set for a file that was never downloaded: %q", files[0].LocalPath)
 	}
 
-	downloaded, err := os.ReadFile(filepath.Join(saveDir, "F001_test.txt"))
-	if err != nil {
-		t.Fatalf("read downloaded file: %v", err)
-	}
-	if string(downloaded) != string(fileContent) {
-		t.Errorf("downloaded content: got %q, want %q (bug: HTML login page saved instead of file)", downloaded, fileContent)
+	dest := filepath.Join(saveDir, "F001_test.txt")
+	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+		saved, _ := os.ReadFile(dest) //nolint:gosec,errcheck // test-controlled path, best-effort detail
+		t.Errorf("the sign-in page was saved as the file: stat = %v, contents = %q", err, saved)
 	}
 }
 

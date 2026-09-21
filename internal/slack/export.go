@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -292,25 +293,48 @@ func (c *Client) buildExportFiles(ctx context.Context, m rawMsg, saveDir string)
 // and writes the contents to destPath. It retries on HTTP 429 responses,
 // honouring the Retry-After header.
 //
-// Slack's url_private_download may redirect to a different host (e.g., a CDN).
-// Go's default http.Client strips the Authorization header on cross-domain
-// redirects, which causes the target to return an HTML login/error page instead
-// of the file content. We use a client that preserves the header.
+// Slack's url_private_download answers with a redirect, and the target serves
+// the bytes only to a request carrying the token: without it the reply is an
+// HTML sign-in page with status 200, so the saved "file" is a web page. Go's
+// http.Client re-sends Authorization only to the same host or a subdomain of
+// it, so a redirect to a sibling host arrives unauthenticated and this client
+// re-attaches the header — but only within the domain the download started in
+// (tokenMayFollowRedirect). Outside it the token is held back and the host is
+// named in the error, because a redirect target is the server's choice, not
+// ours.
+//
+// Do not simplify either half away. TestTokenMayFollowRedirect pins the rule,
+// TestDownloadFileTo_SiblingHostRedirectGetsTheToken covers the redirect that
+// needs it, and TestDownloadFileTo_ForeignHostRedirectIsRefused covers the one
+// that must not have it. gosec G119 flags the re-attachment on principle; the
+// scoping above is the answer to it.
 func (c *Client) downloadFileTo(ctx context.Context, fileURL, destPath string) error {
 	const maxRetries = 3
+
+	// Hosts a redirect reached with the token held back, recorded for the
+	// error message. Written only from CheckRedirect, which runs on the
+	// goroutine calling Do, and reset per attempt.
+	var withheld []string
 
 	dlClient := *c.httpClient
 	dlClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 10 {
 			return fmt.Errorf("stopped after 10 redirects")
 		}
-		if auth := via[0].Header.Get("Authorization"); auth != "" {
-			req.Header.Set("Authorization", auth)
+		auth := via[0].Header.Get("Authorization")
+		if auth == "" {
+			return nil
 		}
+		if !tokenMayFollowRedirect(via[0].URL, req.URL) {
+			withheld = append(withheld, req.URL.Hostname())
+			return nil
+		}
+		req.Header.Set("Authorization", auth) //nolint:gosec // G119: scoped to the starting domain; see the doc comment above
 		return nil
 	}
 
 	for attempt := range maxRetries {
+		withheld = withheld[:0]
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fileURL, nil)
 		if err != nil {
 			return fmt.Errorf("build request: %w", err)
@@ -338,7 +362,16 @@ func (c *Client) downloadFileTo(ctx context.Context, fileURL, destPath string) e
 
 		if resp.StatusCode != http.StatusOK {
 			resp.Body.Close() //nolint:errcheck
-			return fmt.Errorf("unexpected HTTP status: %s", resp.Status)
+			return fmt.Errorf("unexpected HTTP status: %s%s", resp.Status, withheldNote(withheld))
+		}
+
+		// A sign-in page comes back as HTML with status 200, so status alone
+		// cannot tell a file from a refusal. Only a download whose token was
+		// held back is judged this way: writing that page to disk under the
+		// file's name is the failure this whole comment exists for.
+		if len(withheld) > 0 && strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html") {
+			resp.Body.Close() //nolint:errcheck
+			return fmt.Errorf("got an HTML page instead of the file%s", withheldNote(withheld))
 		}
 
 		f, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec

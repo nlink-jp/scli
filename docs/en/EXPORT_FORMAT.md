@@ -36,6 +36,14 @@ This format is used by **scat**, **stail**, and **scli**.
 | `mimetype`   | string | yes      | MIME type (e.g. `image/png`, `application/pdf`)  |
 | `local_path` | string | no       | Absolute path to downloaded file (only when `--save-dir` / `--output-files` is used) |
 
+`local_path` is absent when the download failed; the reason is printed to
+stderr as a `warn:` line and the export continues. One such reason is worth
+knowing: Slack's download URL answers with a redirect, and the token is
+re-sent only within the domain the download started in. A redirect that leaves
+that domain gets no token, so the file is not downloaded and the warning names
+the host — rather than saving the sign-in page that host returns under the
+file's name.
+
 ## Attachment object
 
 Legacy rich attachments (URL unfurls, bot cards, etc.).
