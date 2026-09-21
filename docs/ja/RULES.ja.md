@@ -162,4 +162,4 @@
 
 ---
 
-*原文（英語）: `CLAUDE.md`*
+*原文（英語）: `docs/en/RULES.md`*

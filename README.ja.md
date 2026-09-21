@@ -48,7 +48,7 @@ scli auth login
 | `scli channel list` | 表示可能なチャンネルの一覧（参加・未参加問わず） |
 | `scli channel joined` | 参加中のチャンネルの一覧 |
 | `scli channel read <channel>` | チャンネルのメッセージを読む |
-| `scli channel export <channel>` | チャンネル履歴を JSON にエクスポート（[フォーマット](docs/en/EXPORT_FORMAT.md)） |
+| `scli channel export <channel>` | チャンネル履歴を JSON にエクスポート（[フォーマット](docs/ja/EXPORT_FORMAT.ja.md)） |
 | `scli dm list` | DM 会話の一覧 |
 | `scli dm read <user>` | DM メッセージを読む |
 | `scli dm send <user> [message]` | DM を送信（Block Kit 対応） |
