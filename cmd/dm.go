@@ -186,7 +186,6 @@ func runDMSend(cmd *cobra.Command, args []string) error {
 	return p.PostResult(ts, channelID)
 }
 
-
 // resolveDMChannelID resolves a user name, user ID, or DM channel ID to a
 // DM channel ID (D-prefixed).
 //

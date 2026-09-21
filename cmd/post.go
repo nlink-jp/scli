@@ -90,4 +90,3 @@ func runPost(cmd *cobra.Command, args []string) error {
 	p := newPrinter(cmd)
 	return p.PostResult(ts, channelID)
 }
-
