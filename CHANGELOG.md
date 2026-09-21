@@ -23,15 +23,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The Slack token now follows a file-download redirect only within the
   domain the download started in.** `url_private_download` answers with a
-  redirect and the target serves the bytes only to a request carrying the
-  token, so the header is re-attached (Go re-sends it to a subdomain but not
-  to a sibling host) — but it was re-attached to *whatever host the redirect
-  named*, for up to ten hops. A redirect target is chosen by the server, so
-  that handed the workspace token to any host Slack, or anything answering for
-  Slack, pointed at. Outside the starting domain the token is now held back;
-  the download then fails with a message naming the host instead of saving the
-  sign-in page that host returns under the file's name. Downloads from Slack
-  are unaffected (they stay within `slack.com`).
+  redirect, and Go re-sends `Authorization` to the same host or a subdomain but
+  **not to a sibling host** — so 1.7.1 re-attached it in `CheckRedirect`. It
+  re-attached the token to *whatever host the redirect named*, for up to ten
+  hops, and a redirect target is chosen by the server: that handed the
+  workspace token to any host Slack, or anything answering for Slack, pointed
+  at. It now travels only inside the registrable domain of the URL the download
+  started at, judged against that URL rather than the previous hop, and never
+  onto plain http. Downloads from Slack are unaffected — they stay within
+  `slack.com`.
+
+  The re-attachment itself is kept rather than removed. 1.7.1 added it against
+  an HTML sign-in page served to an unauthenticated request; 1.7.2 then found
+  the missing `files:read` scope was also producing that page, so whether the
+  target still requires the token has not been re-measured here. Keeping it
+  costs nothing when it is unnecessary, and its scope is now the part that is
+  argued rather than assumed.
+
+  Where the token is held back the download fails instead of appearing to
+  succeed: status alone cannot tell a file from a sign-in page, so a withheld
+  hop answered with `text/html` is reported as a failure naming the host.
 
 ## [1.8.0] - 2026-07-12
 

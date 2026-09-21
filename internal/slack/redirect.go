@@ -11,12 +11,15 @@ import (
 // target when the download started at origin.
 //
 // Why the token is re-sent at all: Slack's url_private_download answers with a
-// redirect, and the target refuses to serve the bytes without the token —
-// without it the response is an HTML sign-in page with status 200, so the
-// "downloaded" file is a web page. Go's http.Client re-sends Authorization
-// only to the same host or a subdomain of it (isDomainOrSubdomain), so a
-// redirect to a sibling host arrives unauthenticated. Re-attaching it is
-// deliberate; see downloadFileTo and the regression tests named there.
+// redirect, and Go's http.Client re-sends Authorization only to the same host
+// or a subdomain of it (isDomainOrSubdomain), so a redirect to a sibling host
+// arrives unauthenticated. v1.7.1 added the re-attachment against a target
+// that answered an unauthenticated request with an HTML sign-in page at status
+// 200 — a "downloaded" file that is a web page. Note that v1.7.2 then found a
+// missing files:read scope producing the same page, so whether the target
+// still requires the token has not been re-measured. It is kept because it
+// costs nothing if unnecessary and a download silently returning a web page is
+// expensive; see downloadFileTo and the regression tests named there.
 //
 // Why it is scoped: the previous rule re-attached the token to whatever host
 // the redirect named, for ten hops. A redirect is chosen by the server, so

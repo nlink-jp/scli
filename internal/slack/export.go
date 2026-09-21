@@ -293,15 +293,16 @@ func (c *Client) buildExportFiles(ctx context.Context, m rawMsg, saveDir string)
 // and writes the contents to destPath. It retries on HTTP 429 responses,
 // honouring the Retry-After header.
 //
-// Slack's url_private_download answers with a redirect, and the target serves
-// the bytes only to a request carrying the token: without it the reply is an
-// HTML sign-in page with status 200, so the saved "file" is a web page. Go's
-// http.Client re-sends Authorization only to the same host or a subdomain of
-// it, so a redirect to a sibling host arrives unauthenticated and this client
+// Slack's url_private_download answers with a redirect. Go's http.Client
+// re-sends Authorization only to the same host or a subdomain of it, so a
+// redirect to a sibling host arrives unauthenticated, and this client
 // re-attaches the header — but only within the domain the download started in
-// (tokenMayFollowRedirect). Outside it the token is held back and the host is
-// named in the error, because a redirect target is the server's choice, not
-// ours.
+// (tokenMayFollowRedirect, which records what is and is not measured about
+// that). Outside it the token is held back and the host is named in the error,
+// because a redirect target is the server's choice, not ours. An
+// unauthenticated request has been answered with an HTML sign-in page at
+// status 200, so a saved "file" can be a web page; that is why a withheld hop
+// answered with HTML fails here instead of writing the body out.
 //
 // Do not simplify either half away. TestTokenMayFollowRedirect pins the rule,
 // TestDownloadFileTo_SiblingHostRedirectGetsTheToken covers the redirect that
