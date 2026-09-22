@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Docs
+
+- State, per field, which tool writes what in the shared export schema. scat v2
+  aligned its export with scli, so the page now names scat's behaviour too, and
+  records that `local_path` is always written and empty when nothing was saved —
+  the code never omitted it. Drop the reference to `--output-files`, a scat v1
+  flag that no longer exists.
+
 ## [1.9.0] - 2026-09-21
 
 ### Fixed
