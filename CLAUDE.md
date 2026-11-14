@@ -142,7 +142,7 @@ All contributors (including Claude Code) must follow these rules.
 
 ## 21. Security Scanning
 
-- Go: run `govulncheck ./...` as part of `make check`.
+- Go: run `govulncheck ./...` as part of `make check`. In this repository that is `make vuln`, which `make check` and `make package` both run; a release cannot be built past a finding.
 - Python: run `pip-audit` (or `uv run pip-audit`) as part of `make check`.
 - Address any findings before merging; if a finding is accepted as low-risk, document the rationale.
 

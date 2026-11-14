@@ -17,7 +17,7 @@ PLATFORMS := \
 	darwin/arm64 \
 	windows/amd64
 
-.PHONY: build build-all test lint check setup verify-release clean
+.PHONY: build build-all test lint check setup package verify-release clean vuln
 
 ## build: Build for the current platform
 build:
@@ -45,8 +45,8 @@ test:
 lint:
 	golangci-lint run ./...
 
-## check: Run lint + test + build-all (used by Git hooks)
-check: lint test build-all
+## check: Run lint + test + vuln + build-all (used by Git hooks)
+check: lint test vuln build-all
 
 ## setup: Install Git hooks
 setup:
@@ -55,12 +55,19 @@ setup:
 	@chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 	@echo "Git hooks installed."
 
+## vuln: known vulnerabilities in the modules and the standard library this
+## build uses (govulncheck). `package` depends on it, so a release cannot be
+## built past a finding. It needs the network, and its database changes under
+## an unchanged tree: a finding can appear without a commit.
+vuln:
+	govulncheck ./...
+
 ## package: Build all platforms, archive with version suffix (zip for
 ## darwin/windows, tar.gz for linux), bundle the canonical binary +
 ## README.md + LICENSE, and notarize the darwin build. Asset naming
 ## follows the org Release Archive Standard
 ## (scli-vX.Y.Z-<os>-<arch>.<ext>).
-package: build-all
+package: vuln build-all
 	@cd dist && for p in $(PLATFORMS); do os=$${p%/*}; arch=$${p#*/}; \
 		ext=""; [ "$$os" = windows ] && ext=".exe"; \
 		stage=_pkg; rm -rf $$stage; mkdir -p $$stage; \
