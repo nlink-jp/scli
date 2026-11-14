@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `make vuln` — and so `make check` and `make package` — scans each of the
+  four release builds, with the environment `build-all` builds it with. It
+  scanned the host's build alone, so an advisory in a Linux- or Windows-only
+  package could not stop a release.
+
 ## [1.9.1] - 2026-11-14
 
 ### Security

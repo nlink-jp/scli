@@ -55,12 +55,17 @@ setup:
 	@chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 	@echo "Git hooks installed."
 
-## vuln: known vulnerabilities in the modules and the standard library this
-## build uses (govulncheck). `package` depends on it, so a release cannot be
-## built past a finding. It needs the network, and its database changes under
-## an unchanged tree: a finding can appear without a commit.
+## vuln: known vulnerabilities in the modules and the standard library each
+## release build uses (govulncheck) — one line per line of build-all, with the
+## same environment, because an advisory in an OS-only package shows only in
+## that OS's build. `package` depends on it, so a release cannot be built past a
+## finding. It needs the network, and its database changes under an unchanged
+## tree: a finding can appear without a commit. Keep it in step with build-all.
 vuln:
-	govulncheck ./...
+	CGO_ENABLED=1 GOOS=darwin  GOARCH=arm64 govulncheck ./...
+	CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 govulncheck ./...
+	CGO_ENABLED=0 GOOS=linux   GOARCH=arm64 govulncheck ./...
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 govulncheck ./...
 
 ## package: Build all platforms, archive with version suffix (zip for
 ## darwin/windows, tar.gz for linux), bundle the canonical binary +
