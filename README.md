@@ -26,7 +26,7 @@ make build          # builds for the current platform → dist/scli
 make build-all      # cross-compiles for all target platforms
 ```
 
-Requirements: Go 1.26+, `make`
+Requirements: Go 1.27.4+, `make`
 
 ### First-time setup
 

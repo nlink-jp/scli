@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Go 1.26 or later
+- Go 1.27.4 or later
 - GNU Make
 - A Slack workspace where you have permission to install apps
 

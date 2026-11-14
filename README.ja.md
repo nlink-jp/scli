@@ -28,7 +28,7 @@ make build          # 現在のプラットフォーム向け → dist/scli
 make build-all      # 全プラットフォーム向けクロスコンパイル
 ```
 
-必要条件: Go 1.26+, `make`
+必要条件: Go 1.27.4+, `make`
 
 ### 初期設定
 
